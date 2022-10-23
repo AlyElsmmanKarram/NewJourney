@@ -1,0 +1,106 @@
+#include<iostream>
+using namespace std;
+
+int main() {
+	int n;
+	cout << "Please enter the grid size: ";
+	cin >> n;
+
+	char grid[n][n];
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			grid[i][j] = '.';
+		}
+	}
+
+	bool round_of = 1; // choose between X & O
+	bool is_x_win = 0, is_o_win = 0;
+
+	int r, c; //choosed position to mark
+
+	int cnt_x_rows[n] = { 0 };
+	int cnt_x_cols[n] = { 0 };
+
+	int cnt_o_rows[n] = { 0 };
+	int cnt_o_cols[n] = { 0 };
+
+	int cnt_diag_x[2] = { 0 };
+	int cnt_diag_o[2] = { 0 };
+
+	int steps = 0;
+	while (true) {
+		if (round_of == 1) {
+			cout << "\nPlayer X turn. ";
+		} else {
+			cout << "\nPlayer O turn. ";
+		}
+
+		cout << "Enter empty location (r,c):  ";
+		cin >> r >> c;
+
+		r--, c--;
+
+		if ((r >= n) || (c >= n) || (r < 0) || (c < 0) || grid[r][c] != '.') {
+			cout << "Invalid position, try again. \n";
+			continue;
+		}
+
+		steps++;
+		if (round_of == 1) {
+			grid[r][c] = 'X';
+			cnt_x_rows[r]++;
+			cnt_x_cols[c]++;
+			if (r == c) {
+				cnt_diag_x[0]++;
+			}
+
+			if (r + c == n - 1) {
+				cnt_diag_x[1]++;
+			}
+
+			if (cnt_x_rows[r] == n || cnt_x_cols[c] == n || cnt_diag_x[0] == n
+					|| cnt_diag_x[1] == n) {
+				is_x_win = 1;
+			}
+
+		} else {
+			grid[r][c] = 'O';
+			cnt_o_rows[r]++;
+			cnt_o_cols[c]++;
+			if (r == c) {
+				cnt_diag_o[0]++;
+			}
+
+			if (r + c == n - 1) {
+				cnt_diag_o[1]++;
+			}
+			if (cnt_o_rows[r] == n || cnt_o_cols[c] == n || cnt_diag_o[0] == n
+					|| cnt_diag_o[1] == n) {
+				is_o_win = 1;
+			}
+
+		}
+
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
+				cout << grid[i][j] << " ";
+			}
+			cout << "\n";
+		}
+
+		if (is_x_win) {
+			cout << "Player X won.";
+			break;
+		} else if (is_o_win) {
+			cout << "Player O won.";
+			break;
+		}
+		if (steps == n * n) {
+			cout << "Tie." << "\n";
+			break;
+		}
+		round_of = !round_of;
+	}
+  
+	return 0;
+}
