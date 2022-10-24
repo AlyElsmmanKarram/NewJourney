@@ -1,0 +1,97 @@
+#include<iostream>
+#include<cmath>
+#include<cstdlib>
+
+using namespace std;
+
+string names[100];
+int age[100];
+double salarys[100];
+char gender[100];
+int cnt_employees = 0;
+
+void add_new_employee() {
+	cnt_employees++;
+	cout << "please enter employee information.\nname: ";
+	cin >> names[cnt_employees];
+	cout << "\nage: ";
+	cin >> age[cnt_employees];
+	cout << "\nsalary: ";
+	cin >> salarys[cnt_employees];
+	cout << "\nGender(M , F): ";
+	cin >> gender[cnt_employees];
+}
+
+void print_all_employees() {
+	if (!cnt_employees) {
+		cout << "\nThere are no employees\n";
+		return;
+	}
+	for (int i = 0; i < 100; i++) {
+		if (age[i] == -1) {
+			continue;
+		}
+		cout << "\nName: " << names[i] << " age: " << age[i] << " salary: "
+				<< salarys[i] << " Gender: " << gender[i];
+	}
+}
+
+void delete_by_age() {
+	int delete_from, delete_to;
+	cout << "\nPlease enter the start and end.";
+	cout << "\nstart: ";
+	cin >> delete_from;
+	cout << "\nEnd: ";
+	cin >> delete_to;
+
+	for (int i = 0; i < 100; i++) {
+		if (age[i] >= delete_from && age[i] <= delete_to)
+			age[i] = -1;
+	}
+}
+void edit_salary_by_name() {
+	string name;
+	double salary;
+	cout << "\nPlease enter name and salary.";
+	cout << "\nName: ";
+	cin >> name;
+	cout << "\nSalary: ";
+	cin >> salary;
+	for (int i = 0; i < 100; i++) {
+		if (name == names[i]) {
+			salarys[i] = salary;
+			break;
+		}
+	}
+}
+
+int main() {
+	for (int i = 0; i < 100; i++) {
+		age[i] = -1;
+	}
+	int choice;
+
+	while (true) {
+		cout << "\n\t\t****************************\n";
+		cout << "\tPlease choose what you want to do.";
+		cout << "\n1- Add new employee.";
+		cout << "\n2- Print all employees.";
+		cout << "\n3- Delete employees by age.";
+		cout << "\n4- Edit employee salary by name.";
+		cout << "\n\n\tchoose from 1 to 4 : ";
+		cin >> choice;
+
+		if (choice == 1) {
+			add_new_employee();
+		} else if (choice == 2) {
+			print_all_employees();
+		} else if (choice == 3) {
+			delete_by_age();
+		} else if (choice == 4) {
+			edit_salary_by_name();
+		}
+	}
+
+	return 0;
+}
+
