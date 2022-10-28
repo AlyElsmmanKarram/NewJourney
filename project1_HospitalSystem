@@ -1,0 +1,136 @@
+#include<iostream>
+#include<cmath>
+#include<cstdlib>
+
+using namespace std;
+
+void menu() {
+	cout << "\n\n\t\t**********************\n\n";
+	cout << "\nEnter your choice: \n";
+	cout << "1) Add new patien.\n";
+	cout << "2) Print all patient.\n";
+	cout << "3) Get next Patient.\n";
+	cout << "4) Exit.\n";
+}
+
+void choose(int &choice) {
+	cout << "\nYour choice is : ";
+	cin >> choice;
+	cout << "\n";
+}
+
+int specializations_status[20][5];
+int places[20] = { 0 };
+string names[20][5];
+
+void Add_new_patient() {
+	cout << "Enter specialization, name, status: ";
+	int specialization;
+	string name;
+	bool status;
+
+	cin >> specialization >> name >> status;
+
+	if (places[specialization - 1] < 5) {
+		int place = places[specialization - 1];
+
+		if (status == 0) { // regular
+			specializations_status[specialization - 1][place] = status;
+			names[specialization - 1][place] = name;
+
+		} else { // urgent
+			for (int i = 3; i >= 0; i--) {
+				specializations_status[specialization - 1][i + 1] =
+						specializations_status[specialization - 1][i];
+				names[specialization - 1][i + 1] = names[specialization - 1][i];
+			}
+			specializations_status[specialization - 1][0] = status;
+			names[specialization - 1][0] = name;
+		}
+		places[specialization - 1]++;
+
+	} else {
+		cout << "\nSorry we can't add more patients for this specialization.\n";
+	}
+}
+
+void print_all_patient() {
+	for (int i = 0; i < 20; i++) {
+		if (places[i]) {
+			cout << "\nThere are " << places[i]
+					<< " patients in specialization " << i + 1 << "\n";
+			for (int j = 0; j < 5; j++) {
+				if (specializations_status[i][j] == -1) {
+					break;
+				} else {
+					if (specializations_status[i][j] == 0) {
+						cout << names[i][j] << " regular.\n";
+					} else {
+						cout << names[i][j] << " urgent.\n";
+					}
+				}
+			}
+		}
+	}
+}
+
+void get_next_patient() {
+	cout << "\nEnter specialization: ";
+
+	int specialization;
+	cin >> specialization;
+
+	if (places[specialization - 1]) {
+
+		cout << "\nplease " << names[specialization - 1][0]
+				<< " go with the Dr.\n";
+
+		for (int i = 0; i < 4; i++) {
+
+			specializations_status[specialization - 1][i] =
+					specializations_status[specialization - 1][i + 1];
+			names[specialization - 1][i] = names[specialization - 1][i + 1];
+		}
+
+		if (places[specialization - 1] == 5) {
+			specializations_status[specialization - 1][4] = -1;
+		}
+
+		places[specialization - 1]--;
+	} else {
+		cout << "\nThere are no patients at this moment ,Have rest Dr.\n";
+	}
+}
+void hospital_system() {
+	for (int i = 0; i < 20; i++) {
+		for (int j = 0; j < 5; j++) {
+			specializations_status[i][j] = -1;
+		}
+	}
+	while (true) {
+
+		menu();
+
+		int choice = 1;
+		choose(choice);
+
+		if (choice == 1) {
+			Add_new_patient();
+		} else if (choice == 2) {
+			print_all_patient();
+		} else if (choice == 3) {
+			get_next_patient();
+		} else if (choice == 4) {
+			cout << "Good Bye ^^ ... ";
+			break;
+		} else {
+
+			cout << "\nIt's a wrong choice, Please try again.\n";
+		}
+	}
+}
+
+int main() {
+	hospital_system();
+	return 0;
+}
