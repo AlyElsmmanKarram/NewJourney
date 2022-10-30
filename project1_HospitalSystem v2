@@ -13,6 +13,7 @@ struct queue {
 	queue() {
 		patient = 0;
 	}
+
 	void add_end(string name, bool statue) {
 		names[patient] = name;
 		status[patient] = statue;
@@ -47,6 +48,7 @@ struct queue {
 		}
 	}
 	string remove() {
+
 		string name = names[0];
 		shift_left();
 		patient--;
@@ -56,82 +58,93 @@ struct queue {
 
 queue queue_specialization[max_specialization];
 
-void menu(int &choice) {
-	cout << "\nEnter a choice:";
-	cout << "\n1) Add new patient.";
-	cout << "\n2) Print all patients.";
-	cout << "\n3) Get patient to Dr.";
-	cout << "\n4) Exit.";
-	cout << "\nYour choice is : ";
-	cin >> choice;
-}
+struct Hospital_system {
+	queue queue_specialization[max_specialization];
+	Hospital_system() {
+		for (int i = 0; i < max_specialization; i++) {
+			queue_specialization[i] = queue();
+		}
+	}
+	void run() {
+		while (true) {
+			int choice = menu();
+			if (choice == 1) {
+				add_new_patient();
+			} else if (choice == 2) {
+				print_all_patient();
+			} else if (choice == 3) {
+				get_patient();
+			} else {
+				Exit();
+				break;
+			}
+		}
+	}
+	void Exit() {
+		cout << "\n\n\t\tGood Bye^^...\n";
+	}
+	int menu() {
+		int choice = -1;
+		while (choice == -1) {
+			cout << "\nEnter a choice:";
+			cout << "\n1) Add new patient.";
+			cout << "\n2) Print all patients.";
+			cout << "\n3) Get patient to Dr.";
+			cout << "\n4) Exit.";
+			cout << "\nYour choice is : ";
+			cin >> choice;
+			if (!(1 <= choice && choice <= 4)) {
+				cout << "\nInvalid choice, Try again.\n";
+				choice = -1;
+			}
+		}
+		return choice;
+	}
+	void add_new_patient() {
+		int specialization;
+		string name;
+		bool statue;
 
-void add_new_patient() {
-	int specialization;
-	string name;
-	bool statue;
-
-	cout << "\nEnter specialization , name , status: ";
-	cin >> specialization >> name >> statue;
-	if (queue_specialization[specialization - 1].patient < max_patients) {
-		if (statue == 1) {
-			queue_specialization[specialization - 1].add_front(name, statue);
+		cout << "\nEnter specialization , name , status: ";
+		cin >> specialization >> name >> statue;
+		if (queue_specialization[specialization - 1].patient < max_patients) {
+			if (statue == 1) {
+				queue_specialization[specialization - 1].add_front(name,
+						statue);
+			} else {
+				queue_specialization[specialization - 1].add_end(name, statue);
+			}
 		} else {
-			queue_specialization[specialization - 1].add_end(name, statue);
-		}
-	} else {
-		cout
-				<< "\nSorry we can't receive more patients for this specialization.\n";
-	}
-}
-
-void print_all_patient() {
-	for (int i = 0; i < max_specialization; i++) {
-		if (queue_specialization[i].patient > 0) {
-			cout << "\nSpecialization " << i + 1 << " have "
-					<< queue_specialization[i].patient << " patients. \n";
-			queue_specialization[i].print();
+			cout
+					<< "\nSorry we can't receive more patients for this specialization.\n";
 		}
 	}
-}
-
-void get_patient() {
-	int specialization;
-	cout << "\nEnter specialization : ";
-	cin >> specialization;
-	if (queue_specialization[specialization - 1].patient == 0) {
-		cout
-				<< "\nThere are no patients for this specialization at this moment, have a rest Dr.";
-	} else {
-		cout << "Please " << queue_specialization[specialization - 1].remove()
-				<< " go with Dr. \n";
+	void print_all_patient() {
+		for (int i = 0; i < max_specialization; i++) {
+			if (queue_specialization[i].patient > 0) {
+				cout << "\nSpecialization " << i + 1 << " have "
+						<< queue_specialization[i].patient << " patients. \n";
+				queue_specialization[i].print();
+			}
+		}
 	}
-}
-
-void Exit() {
-	cout << "\n\n\t\tGood Bye^^...\n";
-}
-
-void Hospital_system() {
-	int choice;
-	while (true) {
-		menu(choice);
-		if (choice == 1) {
-			add_new_patient();
-		} else if (choice == 2) {
-			print_all_patient();
-		} else if (choice == 3) {
-			get_patient();
-		} else if (choice == 4) {
-			Exit();
-			break;
+	void get_patient() {
+		int specialization;
+		cout << "\nEnter specialization : ";
+		cin >> specialization;
+		if (queue_specialization[specialization - 1].patient == 0) {
+			cout
+					<< "\nThere are no patients for this specialization at this moment, have a rest Dr.";
 		} else {
-			cout << "\nWrong choice, try again.\n";
+			cout << "Please "
+					<< queue_specialization[specialization - 1].remove()
+					<< " go with Dr. \n";
 		}
 	}
-}
+};
 
 int main() {
-	Hospital_system();
+	Hospital_system hospital = Hospital_system();
+	hospital.run();
 	return 0;
 }
