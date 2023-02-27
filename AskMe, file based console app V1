@@ -1,0 +1,658 @@
+#include <bits/stdc++.h>
+#include<iostream>
+#include<cmath>
+#include<cstdlib>
+#include <algorithm>
+#include<vector>
+#include<queue>//FIFO >> first in first out
+#include <tuple>
+#include <map>
+#include <stack> //LIFO >> last in first out
+#include <set>
+#include <iomanip>
+#include<fstream> // to read and write from files
+#include <utility>
+
+using namespace std;
+
+#define all(v) ((v).begin()),((v).end())
+#define sz(v)  ((int)((v).size()))
+
+vector<string> ReadFileLines(string path) {
+	vector<string> lines;
+
+	fstream file_handler(path.c_str());
+
+	if (file_handler.fail()) {
+		cout << "\n\nError: Can't open the file.\n\n";
+		return lines;
+	}
+
+	string line;
+	while (getline(file_handler, line)) {
+		if ((int) line.size() != 0) {
+			lines.push_back(line);
+		}
+	}
+
+	file_handler.close();
+	return lines;
+}
+
+void WriteFileLines(string path, vector<string> lines, bool append = true) { // append = true
+
+	auto status = ios::in | ios::out | ios::app;
+	if (!append) {
+		status = ios::in | ios::out | ios::trunc;
+	}
+	fstream file_handler(path.c_str(), status);
+
+	if (file_handler.fail()) {
+		cout << "\n\nError: Can't open the file.\n\n";
+		return;
+	}
+
+	for (auto line : lines) {
+		file_handler << line << "\n";
+	}
+
+	file_handler.close();
+}
+
+vector<string> SplitString(string line, string delimiter = ",") {
+	vector<string> strs;
+
+	int pos = 0;
+	string substr;
+	while ((pos = (int) line.find(delimiter)) != -1) {
+		substr = line.substr(0, pos);
+		strs.push_back(substr);
+		line.erase(0, pos + (int)delimiter.size());
+	}
+	strs.push_back(line);
+	return strs;
+}
+
+int ToInt(string str) {
+	istringstream iss(str);
+
+	int num;
+	iss >> num;
+
+	return num;
+}
+int ReadInt(int low, int high) {
+	cout << "\nEnter number in range " << low << " - " << high << ": ";
+	int num;
+	cin >> num;
+
+	if (low <= num && num <= high) {
+		return num;
+	}
+	cout << "\n\nError: Invalid number... Try again\n";
+	return ReadInt(low, high);
+}
+int ShowReadMenu(vector<string> choices) {
+	cout << "\nMenu:\n";
+	for (int i = 0; i < (int) choices.size(); i++) {
+		cout << "\t" << i + 1 << ": " << choices[i] << ".\n";
+	}
+	return ReadInt(1, (int) choices.size());
+}
+
+struct Question {
+	int question_id;
+	// to support thread. Each question look to a parent question
+	// -1 No parent (first question in the thread)
+	int parent_question_id;
+	int from_user_id;
+	int to_user_id;
+	bool is_anonymous_questions;
+	string question_text;
+	string answer_text;
+
+	Question() {
+		question_id = parent_question_id = from_user_id = to_user_id = -1;
+		is_anonymous_questions = 1;
+	}
+
+	Question(string line) {
+		vector<string> substrs = SplitString(line);
+		assert(
+				(int )substrs.size() == 7
+						&& "whoops,,, The input data is invalid\n\n");
+
+		question_id = ToInt(substrs[0]);
+		parent_question_id = ToInt(substrs[1]);
+		from_user_id = ToInt(substrs[2]);
+		to_user_id = ToInt(substrs[3]);
+		is_anonymous_questions = (bool) ToInt(substrs[4]);
+		question_text = substrs[5];
+		answer_text = substrs[6];
+	}
+
+	string Tostring() {
+		ostringstream oss;
+		oss << question_id << "," << parent_question_id << "," << from_user_id
+				<< "," << to_user_id << "," << is_anonymous_questions << ","
+				<< question_text << "," << answer_text;
+		return oss.str();
+	}
+
+	void PrintToQuestion() {
+		string prefix = "";
+
+		if (parent_question_id != -1) {
+			prefix = "\tThread: ";
+		}
+
+		cout << prefix << "Qustion ID (" << question_id << ")";
+		if (!is_anonymous_questions) {
+			cout << "from_user_id (" << from_user_id << ")";
+		}
+		cout << "Question: " << question_text << "\n";
+
+		if (answer_text != "") {
+			cout << prefix << "\tAnswer: " << answer_text << "\n";
+		}
+		cout << "\n";
+	}
+
+	void PrintFromQuestion() {
+		cout << "Question ID (" << question_id << ")";
+		if (!is_anonymous_questions) {
+			cout << " !AQ";
+		}
+
+		cout << " to user ID (" << to_user_id << ")";
+		cout << "\tQuestion: " << question_text;
+
+		if (answer_text != "") {
+			cout << "\tAnswer: " << answer_text << "\n";
+		} else {
+			cout << "\tNOT Answered YET\n";
+		}
+	}
+
+	void PrintFeedQuestion() {
+		if (parent_question_id != -1) {
+			cout << "Thread Parent Question ID (" << parent_question_id << ") ";
+		}
+		cout << "Question ID (" << question_id << ")";
+		if (!is_anonymous_questions) {
+			cout << "from user ID (" << from_user_id << ")";
+		}
+		cout << " To user ID (" << to_user_id << ") ";
+		cout << "\tQuestion: " << question_text << "\n";
+		if (answer_text != "") {
+			cout << "\tAnswer: " << answer_text << "\n";
+		}
+	}
+};
+
+struct User {
+	int user_id;
+	string user_name;
+	string password;
+	string name;
+	string email;
+	bool allow_anonymous_questions;
+
+	vector<int> questions_id_from_me;
+	map<int, vector<int>> questionId_questionsIdsThread;
+
+	User() {
+		user_id = -1;
+		allow_anonymous_questions = 1;
+	}
+
+	User(string line) {
+		vector<string> substrs = SplitString(line);
+		assert(
+				(int )substrs.size() == 6
+						&& "whoops,,, The input data is invalid\n\n");
+		user_id = ToInt(substrs[0]);
+		user_name = substrs[1];
+		password = substrs[2];
+		name = substrs[3];
+		email = substrs[4];
+		allow_anonymous_questions = (bool) ToInt(substrs[5]);
+	}
+
+	string Tostring() {
+		ostringstream oss;
+		oss << user_id << "," << user_name << "," << password << "," << name
+				<< "," << email << "," << allow_anonymous_questions;
+		return oss.str();
+	}
+};
+
+struct QuestionsManager {
+	map<int, vector<int>> questionId_questionsIdsThread;
+
+	map<int, Question> questionId_questionObject;
+	int last_id;
+
+	QuestionsManager() {
+		last_id = 0;
+	}
+
+	void LoadQuestionsDataBase() {
+		questionId_questionsIdsThread.clear();
+		questionId_questionObject.clear();
+
+		vector<string> lines = ReadFileLines("questions.txt");
+		for (auto &line : lines) {
+			Question question(line);
+			//last_id = max()
+
+			questionId_questionObject[question.question_id] = question;
+
+			if (question.parent_question_id == -1) {
+				questionId_questionsIdsThread[question.question_id].push_back(
+						question.question_id);
+			} else {
+				questionId_questionsIdsThread[question.parent_question_id].push_back(
+						question.question_id);
+			}
+		}
+	}
+
+	void FillUserQuestions(User &user) {
+		user.questions_id_from_me.clear();
+		user.questionId_questionsIdsThread.clear();
+
+		for (auto& [questionId, Thread] : questionId_questionsIdsThread) {
+			for (auto &question_id : Thread) {
+				Question &question = questionId_questionObject[question_id];
+
+				if (question.from_user_id == user.user_id) {
+					user.questions_id_from_me.push_back(question.question_id);
+				}
+				if (question.to_user_id == user.user_id) {
+					if (question.parent_question_id == -1) {
+						user.questionId_questionsIdsThread[question.question_id].push_back(
+								question.question_id);
+					} else {
+						user.questionId_questionsIdsThread[question.parent_question_id].push_back(
+								question.question_id);
+					}
+				}
+			}
+		}
+	}
+
+	void PrintUserToQuestions(User &user) {
+		if (user.questionId_questionsIdsThread.size() == 0) {
+			cout << "No Questions.";
+		}
+
+		for (auto& [questionId, Thread] : user.questionId_questionsIdsThread) {
+			for (auto &question_id : Thread) {
+				Question &question = questionId_questionObject[question_id];
+				question.PrintToQuestion();
+			}
+		}
+		cout << "\n";
+	}
+
+	void PrintUserFromQuestions(User &user) {
+		if (user.questions_id_from_me.size() == 0) {
+			cout << "No Questions.";
+		}
+
+		for (auto &questionId : user.questions_id_from_me) {
+			Question &question = questionId_questionObject[questionId];
+			question.PrintFromQuestion();
+		}
+		cout << "\n";
+	}
+
+	//To answer a question for me
+	int ReadQuestionIdAny(User &user) {
+		int question_id;
+		cout << "Enter Question id or -1 to cancel: ";
+		cin >> question_id;
+
+		if (question_id == -1) {
+			return -1;
+		}
+		if (!questionId_questionObject.count(question_id)) {
+			cout << "Error: No question with such ID. Try again...\n\n";
+			return ReadQuestionIdAny(user);
+		}
+		Question &question = questionId_questionObject[question_id];
+
+		if (question.to_user_id != user.user_id) {
+			cout << "Error: Invalid question ID. Try again...\n\n";
+			return ReadQuestionIdAny(user);
+		}
+		return question_id;
+	}
+
+	// to ask question on a specific thread or question
+	int ReadQuestionIdThread(User &user) {
+		int question_id;
+		cout
+				<< "For thread question: Enter Question id or -1 for new question: ";
+		cin >> question_id;
+
+		if (question_id == -1) {
+			return -1;
+		}
+
+		if (!questionId_questionObject.count(question_id)) {
+			cout << "Error: No question with such ID. Try again...\n\n";
+			return ReadQuestionIdThread(user);
+		}
+		return question_id;
+	}
+
+	void AnswerQuestion(User &user) {
+		int question_id = ReadQuestionIdAny(user);
+		if (question_id == -1) {
+			return;
+		}
+		Question &question = questionId_questionObject[question_id];
+
+		question.PrintToQuestion();
+
+		if (question.answer_text != "") {
+			cout
+					<< "\n Warning: Question Already Answered. Answer will be updated.\n";
+		}
+		cout << "Enter answer: ";// if user enter comma, system will fails ... :(
+		getchar();	// read last enter
+		getline(cin, question.answer_text);
+	}
+
+	void DeleteQuestion(User &user) {
+		int question_id = ReadQuestionIdAny(user);
+
+		if (question_id == -1) {
+			return;
+		}
+
+		if (!questionId_questionObject.count(question_id)) {
+			cout << "Error: No question with such ID. Try again...\n\n";
+			return;
+		}
+
+		vector<int> ids_to_remove;
+		//Let's see if thread or not. If thread, remove all of it
+		if (questionId_questionsIdsThread.count(question_id)) { // thread
+			ids_to_remove = questionId_questionsIdsThread[question_id];
+			questionId_questionsIdsThread.erase(question_id);
+		} else {
+			ids_to_remove.push_back(question_id);
+
+			//Let's find in which thread to remove
+			for (auto &pair : questionId_questionsIdsThread) {
+				vector<int> &vec = pair.second;
+				for (int pos = 0; pos < (int) vec.size(); ++pos) {
+					if (question_id == vec[pos]) {
+						vec.erase(vec.begin() + pos);
+						break;
+					}
+				}
+			}
+
+		}
+
+		for (auto id : ids_to_remove) {
+			questionId_questionObject.erase(id);
+		}
+
+	}
+
+	void AskQuesiton(User &user, pair<int, int> to_user_pair) {
+		Question question;
+
+		if (!to_user_pair.second) {
+			cout
+					<< "Note: Anonymous questions are not allowed for this user.\n";
+			question.is_anonymous_questions = 0;
+		} else {
+			cout << "Is anonymous question?: (0 or 1): ";
+			cin >> question.is_anonymous_questions;
+		}
+
+		question.parent_question_id = ReadQuestionIdThread(user);
+
+		cout << "Enter question text: "; // if user enter comma, system fails ... :(
+		getchar();	//
+		getline(cin, question.question_text);
+
+		question.from_user_id = user.user_id;
+		question.to_user_id = to_user_pair.first;
+
+		//What happens in 2 parallel sessions who asked question?
+		// They are given same id. This is wrong handling :(
+		question.question_id = ++last_id;
+
+		questionId_questionObject[question.question_id] = question;
+
+		if (question.parent_question_id == -1) {
+			questionId_questionsIdsThread[question.question_id].push_back(
+					question.question_id);
+		} else {
+			questionId_questionsIdsThread[question.parent_question_id].push_back(
+					question.question_id);
+		}
+	}
+
+	void ListFeed() {
+		for (auto& [id, question] : questionId_questionObject) {
+			if (question.answer_text == "") {
+				continue;
+			}
+			question.PrintFeedQuestion();
+		}
+	}
+
+	void UpdateDataBase() {
+		vector<string> lines;
+
+		for (auto& [id, question] : questionId_questionObject) {
+			lines.push_back(question.Tostring());
+		}
+		WriteFileLines("questions.txt", lines, false);
+	}
+};
+
+struct UserManager {
+	map<string, User> username_userObject;
+	User current_user;
+	int last_id;
+
+	UserManager() {
+		last_id = 0;
+	}
+
+	void LoadUsersDataBase() {
+		last_id = 0;
+		username_userObject.clear();
+
+		vector<string> lines = ReadFileLines("users.txt");
+		for (auto line : lines) {
+			User user(line);
+			username_userObject[user.user_name] = user;
+			last_id = max(last_id, user.user_id);
+		}
+	}
+
+	void AccessSystem() {
+		int choice = ShowReadMenu( { "Login", "Sign Up" });
+		if (choice == 1) {
+			DoLogin();
+		} else {
+			DoSignUp();
+		}
+	}
+
+	void DoLogin() {
+		LoadUsersDataBase();		// in case user added from parallel run
+
+		while (true) {
+			cout << "Enter user name & password: ";
+			cin >> current_user.user_name >> current_user.password;
+
+			if (!username_userObject.count(current_user.user_name)) {
+				cout << "\nInvalid user name or password. Try again...\n\n";
+				continue;
+			}
+
+			User user_exist = username_userObject[current_user.user_name];
+			if (user_exist.password != current_user.password) {
+				cout << "\nInvalid user name or password. Try again...\n\n";
+				continue;
+			}
+			current_user = user_exist;
+			break;
+		}
+	}
+
+	void DoSignUp() {
+		while (true) {
+			cout << "Enter user name.(NO spaces): ";
+			cin >> current_user.user_name;
+
+			if (username_userObject.count(current_user.user_name)) {
+				cout << "\nAlready used. Try again...\n\n";
+			} else {
+				break;
+			}
+		}
+		cout << "Enter password: ";
+		cin >> current_user.password;
+
+		cout << "Enter name: ";
+		cin >> current_user.name;
+
+		cout << "Enter email: ";
+		cin >> current_user.email;
+
+		cout << "Allow anonymous questions? (0 or 1): ";
+		cin >> current_user.allow_anonymous_questions;
+
+		//What happens in 2 parallel sessions who asked question?
+		// They are given same id. This is wrong handling :(
+		current_user.user_id = ++last_id;
+		username_userObject[current_user.user_name] = current_user;
+
+		UpdateDataBase(current_user);
+	}
+
+	void ListUsersNamesIds() {
+		for (auto& [userName, user] : username_userObject) {
+			cout << "ID: " << user.user_id << " Name: " << user.name << "\n";
+		}
+	}
+
+	pair<int, int> ReadUserId() {
+		int user_id;
+		cout << "Enter User id or -1 to cancel: ";
+		cin >> user_id;
+
+		if (user_id == -1) {
+			return {-1, -1};
+		}
+		for (auto& [userName, user] : username_userObject) {
+			if (user.user_id == user_id) {
+				return {user_id, user.allow_anonymous_questions};
+			}
+		}
+
+		cout << "\nInvalid User ID. Try again...\n\n";
+		return ReadUserId();
+	}
+
+	void UpdateDataBase(User &user) {
+		string line = user.Tostring();
+
+		vector<string> lines(1, line);
+
+		WriteFileLines("users.txt", lines);
+	}
+
+};
+
+struct AskMeSystem {
+	UserManager users_manager;
+	QuestionsManager questions_manager;
+
+	void LoadSystemDataBase(bool fill_user_question = false) {
+		users_manager.LoadUsersDataBase();
+		questions_manager.LoadQuestionsDataBase();
+
+		if (fill_user_question) { // first time, waiting for login
+			questions_manager.FillUserQuestions(users_manager.current_user);
+		}
+	}
+
+	void Run() {
+		LoadSystemDataBase();
+		users_manager.AccessSystem();
+		questions_manager.FillUserQuestions(users_manager.current_user);
+
+		vector<string> menu;
+		menu.push_back("Print Questions To Me");
+		menu.push_back("Print Questions From Me");
+		menu.push_back("Answer Question");
+		menu.push_back("Delete Question");
+		menu.push_back("Ask Question");
+		menu.push_back("List System Users");
+		menu.push_back("Feed");
+		menu.push_back("Logout");
+
+		while (true) {
+
+			int choice = ShowReadMenu(menu);
+			LoadSystemDataBase(true);
+			system("CLS");
+
+			if (choice == 1) {
+				questions_manager.PrintUserToQuestions(
+						users_manager.current_user);
+			} else if (choice == 2) {
+				questions_manager.PrintUserFromQuestions(
+						users_manager.current_user);
+			} else if (choice == 3) {
+				questions_manager.AnswerQuestion(users_manager.current_user);
+				questions_manager.UpdateDataBase();
+			} else if (choice == 4) {
+				questions_manager.DeleteQuestion(users_manager.current_user);
+
+				// Let's build again (just easier, but slow)...
+				questions_manager.FillUserQuestions(users_manager.current_user);
+				questions_manager.UpdateDataBase();
+			} else if (choice == 5) {
+				pair<int, int> to_user_pair = users_manager.ReadUserId();
+                if(to_user_pair.first == users_manager.current_user.user_id){
+                    cout << "\nYou can't ask yourself...\n\n";
+                    continue;
+                }
+				if (to_user_pair.first != -1) {
+					questions_manager.AskQuesiton(users_manager.current_user,
+							to_user_pair);
+					questions_manager.UpdateDataBase();
+				}
+			} else if (choice == 6) {
+				users_manager.ListUsersNamesIds();
+			} else if (choice == 7) {
+				questions_manager.ListFeed();
+			} else {
+				break;
+			}
+
+		}
+		Run();
+	}
+
+};
+
+int main() {
+	AskMeSystem service;
+	service.Run();
+	return 0;
+}
